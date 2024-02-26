@@ -1,0 +1,111 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class RayCasting : MonoBehaviour
+{
+    public Camera Playercamera;
+
+    public float Firerate = 10f;
+    private float timeBeteenNextShot;
+    public float damage = 20f;
+    public CamMovement mouse;
+    public GameObject mudeffect;
+
+
+    [Header("Recoil")]
+    public float vRecoil = 1f;
+    public float hRecoil = 1f;
+
+    //this is ammo area 
+    [Header("Ammo Manegment")]
+    public int ammocount = 30;
+    public int availableammo = 100;
+    public int maxammo = 30;
+    public Animator anim;
+    public Text currentammo;
+
+    public Animator aimAnim;
+    public bool aim;
+
+
+
+
+
+
+    void Update()
+    {
+        if (Input.GetButtonDown("Fire2"))
+        {
+            aim = !aim;
+        }
+        if (aim == true)
+        {
+            aimAnim.SetBool("Aim", true);
+
+        }
+        else
+        {
+            aimAnim.SetBool("Aim", false);
+
+        }
+        currentammo.text = ammocount.ToString();
+        if (Input.GetKeyDown(KeyCode.R) && ammocount < maxammo)
+        {
+            mouse.AddRecoil(0, 0);
+            anim.SetBool("Reload", true);
+            anim.SetBool("Shoot", false);
+        }
+
+        if (ammocount <= 0)
+        {
+            mouse.AddRecoil(0, 0);
+            anim.SetBool("Reload", true);
+            anim.SetBool("Shoot", false);
+            return;
+        }
+        if (Input.GetButton("Fire1") && Time.time >= timeBeteenNextShot)
+        {
+            timeBeteenNextShot = Time.time + 1f / Firerate;
+            float h = Random.Range(-hRecoil, hRecoil);
+            anim.SetBool("Shoot", true);
+            mouse.AddRecoil(h, vRecoil);
+            weapon();
+        }
+        if (Input.GetButtonUp("Fire1"))
+        {
+            mouse.AddRecoil(0, 0);
+            anim.SetBool("Shoot", false);
+        }
+    }
+
+    void weapon()
+    {
+        // Check if reload animation is not playing
+        if (!anim.GetCurrentAnimatorStateInfo(1).IsName("Reload"))
+        {
+            ammocount--;
+            RaycastHit hit;
+            if (Physics.Raycast(Playercamera.transform.position, Playercamera.transform.forward, out hit))
+            {
+                Instantiate(mudeffect, hit.point, Quaternion.LookRotation(hit.normal));
+                if (hit.transform.CompareTag("Enemy"))
+                {
+                    Health enemy = hit.transform.GetComponent<Health>();
+                    enemy.Damage(damage);
+                }
+            }
+        }
+    }
+
+
+    public void Reload()
+    {
+
+        availableammo = availableammo - maxammo + ammocount;
+        ammocount = maxammo;
+        anim.SetBool("Reload", false);
+    }
+}
+
