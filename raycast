@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,6 +13,8 @@ public class RayCasting : MonoBehaviour
     public float damage = 20f;
     public CamMovement mouse;
     public GameObject mudeffect;
+    public GameObject bulleteffect;
+    public GameObject Smokeeffect;
 
 
     [Header("Recoil")]
@@ -29,8 +32,14 @@ public class RayCasting : MonoBehaviour
     public Animator aimAnim;
     public bool aim;
 
+    public GameObject fireEffect;
+
+    private bool isReloading = false;
 
 
+    [Header("SoundFX")]
+    public AudioSource src;
+    public AudioClip bullet, reloadFX;
 
 
 
@@ -51,41 +60,57 @@ public class RayCasting : MonoBehaviour
 
         }
         currentammo.text = ammocount.ToString();
-        if (Input.GetKeyDown(KeyCode.R) && ammocount < maxammo)
+        if ((Input.GetKeyDown(KeyCode.R) && ammocount < maxammo) || ammocount <= 0)
         {
-            mouse.AddRecoil(0, 0);
-            anim.SetBool("Reload", true);
-            anim.SetBool("Shoot", false);
+            isReloading = true;
+            StartCoroutine(reloadFXCoroutine());
         }
 
-        if (ammocount <= 0)
+        //if (ammocount <= 0)
+        //{
+        //    StartCoroutine(reloadFXCoroutine());
+        //    mouse.AddRecoil(0, 0);
+        //    anim.SetBool("Reload", true);
+        //    anim.SetBool("Shoot", false);
+        //    fireEffect.SetActive(false);
+        //    return;
+        //}
+        
+        if(isReloading == true)
         {
+
             mouse.AddRecoil(0, 0);
             anim.SetBool("Reload", true);
             anim.SetBool("Shoot", false);
-            return;
+            fireEffect.SetActive(false);
+            StartCoroutine(ReloadCoroutine());
+
         }
-        if (Input.GetButton("Fire1") && Time.time >= timeBeteenNextShot)
+        
+        if (Input.GetButton("Fire1") && Time.time >= timeBeteenNextShot && isReloading== false)
         {
             timeBeteenNextShot = Time.time + 1f / Firerate;
             float h = Random.Range(-hRecoil, hRecoil);
             anim.SetBool("Shoot", true);
             mouse.AddRecoil(h, vRecoil);
-            weapon();
+            
+            Weapon();
         }
         if (Input.GetButtonUp("Fire1"))
         {
             mouse.AddRecoil(0, 0);
             anim.SetBool("Shoot", false);
+            fireEffect.SetActive(false);
         }
+        
     }
 
-    void weapon()
+    void Weapon()
     {
-        // Check if reload animation is not playing
-        if (!anim.GetCurrentAnimatorStateInfo(1).IsName("Reload"))
-        {
+        src.clip = bullet;
+        src.Play();
             ammocount--;
+            fireEffect.SetActive(true);
             RaycastHit hit;
             if (Physics.Raycast(Playercamera.transform.position, Playercamera.transform.forward, out hit))
             {
@@ -95,17 +120,38 @@ public class RayCasting : MonoBehaviour
                     Health enemy = hit.transform.GetComponent<Health>();
                     enemy.Damage(damage);
                 }
+                else
+                {
+                    GameObject obj1 = Instantiate(bulleteffect, hit.point, Quaternion.identity, hit.transform);
+                    obj1.transform.rotation = Quaternion.LookRotation(hit.normal);
+
+                    GameObject obj2 = Instantiate(Smokeeffect, hit.point, Quaternion.identity, hit.transform);
+                    obj2.transform.rotation = Quaternion.LookRotation(hit.normal);
+                }
             }
-        }
+        
     }
 
 
     public void Reload()
     {
-
+        fireEffect.SetActive(false);
         availableammo = availableammo - maxammo + ammocount;
         ammocount = maxammo;
         anim.SetBool("Reload", false);
     }
+
+    IEnumerator ReloadCoroutine()
+    {
+        yield return new WaitForSeconds(5.14f);
+        isReloading = false;
+    }
+    IEnumerator reloadFXCoroutine()
+    {
+        yield return new WaitForSeconds(0.5f);
+        src.clip = reloadFX;
+        src.Play();
+    }
+
 }
 
