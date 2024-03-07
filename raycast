@@ -59,24 +59,24 @@ public class RayCasting : MonoBehaviour
             aimAnim.SetBool("Aim", false);
 
         }
-        currentammo.text = ammocount.ToString();
-        if ((Input.GetKeyDown(KeyCode.R) && ammocount < maxammo) || ammocount <= 0)
+        currentammo.text = ammocount.ToString() + '/' + availableammo.ToString();
+        if ((Input.GetKeyDown(KeyCode.R) && ammocount < maxammo))
         {
             isReloading = true;
             StartCoroutine(reloadFXCoroutine());
         }
 
-        //if (ammocount <= 0)
-        //{
-        //    StartCoroutine(reloadFXCoroutine());
-        //    mouse.AddRecoil(0, 0);
-        //    anim.SetBool("Reload", true);
-        //    anim.SetBool("Shoot", false);
-        //    fireEffect.SetActive(false);
-        //    return;
-        //}
-        
-        if(isReloading == true)
+        if (ammocount <= 0)
+        {
+            StartCoroutine(reloadFXCoroutine());
+            mouse.AddRecoil(0, 0);
+            anim.SetBool("Reload", true);
+            anim.SetBool("Shoot", false);
+            fireEffect.SetActive(false);
+            return;
+        }
+
+        if (isReloading == true)
         {
 
             mouse.AddRecoil(0, 0);
@@ -86,14 +86,13 @@ public class RayCasting : MonoBehaviour
             StartCoroutine(ReloadCoroutine());
 
         }
-        
-        if (Input.GetButton("Fire1") && Time.time >= timeBeteenNextShot && isReloading== false)
+
+        if (Input.GetButton("Fire1") && Time.time >= timeBeteenNextShot && isReloading == false)
         {
             timeBeteenNextShot = Time.time + 1f / Firerate;
             float h = Random.Range(-hRecoil, hRecoil);
             anim.SetBool("Shoot", true);
             mouse.AddRecoil(h, vRecoil);
-            
             Weapon();
         }
         if (Input.GetButtonUp("Fire1"))
@@ -102,34 +101,34 @@ public class RayCasting : MonoBehaviour
             anim.SetBool("Shoot", false);
             fireEffect.SetActive(false);
         }
-        
+
     }
 
     void Weapon()
     {
         src.clip = bullet;
         src.Play();
-            ammocount--;
-            fireEffect.SetActive(true);
-            RaycastHit hit;
-            if (Physics.Raycast(Playercamera.transform.position, Playercamera.transform.forward, out hit))
+        ammocount--;
+        fireEffect.SetActive(true);
+        RaycastHit hit;
+        if (Physics.Raycast(Playercamera.transform.position, Playercamera.transform.forward, out hit))
+        {
+            Instantiate(mudeffect, hit.point, Quaternion.LookRotation(hit.normal));
+            if (hit.transform.CompareTag("Enemy"))
             {
-                Instantiate(mudeffect, hit.point, Quaternion.LookRotation(hit.normal));
-                if (hit.transform.CompareTag("Enemy"))
-                {
-                    Health enemy = hit.transform.GetComponent<Health>();
-                    enemy.Damage(damage);
-                }
-                else
-                {
-                    GameObject obj1 = Instantiate(bulleteffect, hit.point, Quaternion.identity, hit.transform);
-                    obj1.transform.rotation = Quaternion.LookRotation(hit.normal);
-
-                    GameObject obj2 = Instantiate(Smokeeffect, hit.point, Quaternion.identity, hit.transform);
-                    obj2.transform.rotation = Quaternion.LookRotation(hit.normal);
-                }
+                Health enemy = hit.transform.GetComponent<Health>();
+                enemy.Damage(damage);
             }
-        
+            else
+            {
+                GameObject obj1 = Instantiate(bulleteffect, hit.point, Quaternion.identity, hit.transform);
+                obj1.transform.rotation = Quaternion.LookRotation(hit.normal);
+
+                GameObject obj2 = Instantiate(Smokeeffect, hit.point, Quaternion.identity, hit.transform);
+                obj2.transform.rotation = Quaternion.LookRotation(hit.normal);
+            }
+        }
+
     }
 
 
